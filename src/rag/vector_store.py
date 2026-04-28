@@ -50,11 +50,8 @@ def create_vector_index(
         # Create vector store
         vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
 
-        # Create storage context
-        storage_context = StorageContext.from_defaults(
-            vector_store=vector_store,
-            persist_dir=persist_dir,
-        )
+        # Create storage context (without persist_dir to avoid loading non-existent store)
+        storage_context = StorageContext.from_defaults(vector_store=vector_store)
 
         # Create index
         index = VectorStoreIndex.from_documents(
@@ -63,6 +60,9 @@ def create_vector_index(
             storage_context=storage_context,
             show_progress=True,
         )
+
+        # Persist storage context to disk
+        storage_context.persist(persist_dir=persist_dir)
     else:
         # In-memory index
         index = VectorStoreIndex.from_documents(

@@ -1,5 +1,6 @@
 """LLM initialization module."""
-from openai import OpenAI
+from typing import Optional
+from langchain_openai import ChatOpenAI
 from src.config.settings import (
     ALIYUN_API_KEY,
     DASHSCOPE_BASE_URL,
@@ -14,25 +15,26 @@ def create_llm(
     api_key: str = None,
     base_url: str = None,
     **kwargs
-) -> OpenAI:
+) -> ChatOpenAI:
     """
-    Create an OpenAI-compatible LLM client.
+    Create a ChatOpenAI LLM instance.
 
     Args:
         model: Model name. Defaults to settings.LLM_MODEL
         thinking: Whether to enable deep thinking mode
         api_key: API key. Defaults to ALIYUN_API_KEY
         base_url: Base URL. Defaults to DASHSCOPE_BASE_URL
-        **kwargs: Additional arguments passed to OpenAI client
+        **kwargs: Additional arguments passed to ChatOpenAI
 
     Returns:
-        OpenAI client instance
+        ChatOpenAI instance
     """
     actual_model = model or LLM_MODEL
     if thinking and LLM_MODEL_THINKING:
         actual_model = LLM_MODEL_THINKING
 
-    return OpenAI(
+    return ChatOpenAI(
+        model=actual_model,
         api_key=api_key or ALIYUN_API_KEY,
         base_url=base_url or DASHSCOPE_BASE_URL,
         **kwargs

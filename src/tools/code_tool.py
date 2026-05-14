@@ -9,49 +9,45 @@ from langchain_core.tools import tool
 
 @tool
 def execute_python_code(code: str) -> str:
-    """
-    Execute Python code and return the output.
-
-    This tool can run Python code snippets for testing, calculation, or
-    data manipulation. It captures both stdout output and returned values.
+    """Execute Python code and return the output. Captures stdout and return value.
 
     Args:
-        code: Python code to execute. Should be a complete, runnable snippet.
+        code: Python code as a plain string. Example values:
+            - "print(1 + 2)"
+            - "[x for x in range(5)]"
+            - "def foo(x): return x * 2"
 
     Returns:
-        The stdout output and any returned value from the code.
-
-    Example:
-        >>> execute_python_code("print(1 + 2)")
-        3
-
-        >>> execute_python_code("import math; math.sqrt(16)")
-        4.0
-
-        >>> execute_python_code("def add(a, b): return a + b; add(1, 2)")
-        3
+        stdout output followed by any return value.
     """
     # Capture stdout
     old_stdout = sys.stdout
     sys.stdout = captured_output = io.StringIO()
 
     try:
-        # Execute the code
-        result = exec(code, {'__name__': '__main__'})
+        # Try eval first (for expressions like list comprehensions)
+        try:
+            result = eval(code, {'__name__': '__main__'})
+            output = captured_output.getvalue()
+            sys.stdout = old_stdout
+            if output:
+                return output.rstrip() + '\n' + str(result)
+            return str(result)
+        except SyntaxError:
+            # Not a pure expression, try exec (for statements)
+            pass
 
-        # Get stdout
+        # Restore stdout for second attempt
+        sys.stdout = old_stdout
+        sys.stdout = captured_output = io.StringIO()
+
+        exec(code, {'__name__': '__main__'})
         output = captured_output.getvalue()
-
-        # Restore stdout
         sys.stdout = old_stdout
 
-        # Format result
         if output:
             return output.rstrip()
-        elif result is None:
-            return "Code executed successfully (no output)"
-        else:
-            return str(result)
+        return "Code executed successfully (no output)"
 
     except Exception as e:
         sys.stdout = old_stdout
@@ -60,22 +56,16 @@ def execute_python_code(code: str) -> str:
 
 @tool
 def explain_code(code: str) -> str:
-    """
-    Explain what a piece of Python code does.
-
-    This tool analyzes Python code and provides a natural language
-    explanation of its functionality, inputs, and outputs.
+    """Explain what a piece of Python code does using AST analysis.
 
     Args:
-        code: Python code to explain
+        code: Python code as a plain string. Example values:
+            - "sorted([3, 1, 2])"
+            - "[x for x in range(5)]"
+            - "def foo(x): return x * 2"
 
     Returns:
         A detailed explanation of what the code does.
-
-    Example:
-        >>> explain_code("sorted([3, 1, 2])")
-        This code sorts a list of numbers in ascending order.
-        ...
     """
     try:
         tree = ast.parse(code)

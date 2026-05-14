@@ -19,6 +19,11 @@ from src.rag.vector_store import (
     query_index,
     VectorStoreManager,
 )
+from src.rag.index_manager import (
+    IndexManager,
+    get_index_manager,
+    search_knowledge_base,
+)
 
 __all__ = [
     # Document loader
@@ -37,4 +42,8 @@ __all__ = [
     "load_existing_index",
     "query_index",
     "VectorStoreManager",
+    # Index manager
+    "IndexManager",
+    "get_index_manager",
+    "search_knowledge_base",
 ]

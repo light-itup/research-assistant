@@ -8,21 +8,27 @@ from src.config.settings import PROJECT_ROOT
 
 @tool
 def read_file(file_path: str, max_lines: int = 100, offset: int = 0) -> str:
-    """
-    Read the contents of a file.
+    """Read file contents with line numbers.
 
     Args:
-        file_path: Path to the file (absolute or relative to project root)
-        max_lines: Maximum number of lines to read (default: 100)
-        offset: Line number to start reading from (default: 0)
+        file_path: Path to file (absolute or relative to project root)
+        max_lines: Maximum lines to read (default 100)
+        offset: Starting line number (default 0)
 
     Returns:
-        The file contents as a string, with line numbers for reference.
-
-    Example:
-        >>> read_file("src/rag/document_loader.py")
-        (shows file contents with line numbers)
+        File contents with line numbers.
     """
+    # Handle JSON string input from agent
+    if file_path.startswith('{'):
+        import json
+        try:
+            kwargs = json.loads(file_path)
+            file_path = kwargs.get('file_path', file_path)
+            max_lines = kwargs.get('max_lines', max_lines)
+            offset = kwargs.get('offset', offset)
+        except json.JSONDecodeError:
+            pass
+
     path = _resolve_path(file_path)
 
     if not path.exists():
@@ -67,6 +73,17 @@ def write_file(file_path: str, content: str, append: bool = False) -> str:
     Warning:
         This tool can overwrite existing files. Use append=True to add content safely.
     """
+    # Handle JSON string input from agent
+    if file_path.startswith('{'):
+        import json
+        try:
+            kwargs = json.loads(file_path)
+            file_path = kwargs.get('file_path', file_path)
+            content = kwargs.get('content', content)
+            append = kwargs.get('append', append)
+        except json.JSONDecodeError:
+            pass
+
     path = _resolve_path(file_path)
 
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -102,6 +119,17 @@ def list_directory(directory_path: str = ".", pattern: str = "*", recursive: boo
         >>> list_directory("src", "*.py")
         (shows files in src directory)
     """
+    # Handle JSON string input from agent
+    if directory_path.startswith('{'):
+        import json
+        try:
+            kwargs = json.loads(directory_path)
+            directory_path = kwargs.get('directory_path', directory_path)
+            pattern = kwargs.get('pattern', pattern)
+            recursive = kwargs.get('recursive', recursive)
+        except json.JSONDecodeError:
+            pass
+
     path = _resolve_path(directory_path)
 
     if not path.exists():
@@ -152,6 +180,15 @@ def get_file_info(file_path: str) -> str:
     Returns:
         File metadata including size, creation/modification dates, and type.
     """
+    # Handle JSON string input from agent
+    if file_path.startswith('{'):
+        import json
+        try:
+            kwargs = json.loads(file_path)
+            file_path = kwargs.get('file_path', file_path)
+        except json.JSONDecodeError:
+            pass
+
     path = _resolve_path(file_path)
 
     if not path.exists():
@@ -199,6 +236,17 @@ def search_files(directory_path: str = ".", pattern: str = None, regex: str = No
         >>> search_files("src", regex="def.*search")
         (shows matching lines)
     """
+    # Handle JSON string input from agent
+    if directory_path.startswith('{'):
+        import json
+        try:
+            kwargs = json.loads(directory_path)
+            directory_path = kwargs.get('directory_path', directory_path)
+            pattern = kwargs.get('pattern', pattern)
+            regex = kwargs.get('regex', regex)
+        except json.JSONDecodeError:
+            pass
+
     import re
 
     path = _resolve_path(directory_path)

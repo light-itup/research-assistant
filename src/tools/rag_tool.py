@@ -5,9 +5,7 @@ from langchain_core.tools import tool
 from src.rag import (
     load_documents,
     split_documents,
-    create_embedder,
-    create_vector_index,
-    query_index,
+    IndexManager,
 )
 from src.config.settings import KNOWLEDGE_BASE_DIR
 
@@ -19,6 +17,9 @@ def search_knowledge_base(query: str, top_k: int = 5) -> str:
 
     This tool searches through uploaded documents, PDFs, and other files
     in the knowledge base to find relevant information.
+
+    NOTE: The knowledge base must be initialized first by running:
+        python scripts/init_knowledge_base.py
 
     Args:
         query: The search query (e.g., "transformer architecture", "attention mechanism")
@@ -47,24 +48,25 @@ def search_knowledge_base(query: str, top_k: int = 5) -> str:
         Allows each token to attend to all other tokens...
         ---
     """
-    # Load documents from knowledge base
-    try:
-        docs = load_documents(directory=str(KNOWLEDGE_BASE_DIR))
-    except Exception as e:
-        return f"Error loading documents: {str(e)}"
+    # Get the global index manager
+    manager = IndexManager.get_instance()
 
-    if not docs:
+    # Try to initialize if not ready
+    if not manager.is_ready():
+        manager.initialize()
+
+    # Check if index is ready
+    if not manager.is_ready():
         return (
-            "No documents found in knowledge base. "
-            "Please add some documents to data/knowledge_base/ first."
+            "Knowledge base not initialized. "
+            "Please run: python scripts/init_knowledge_base.py"
         )
 
-    # Create embedder and index
-    embedder = create_embedder()
-    index = create_vector_index(docs, embed_model=embedder, store_locally=False)
-
-    # Query the index
-    results = query_index(index, query, top_k=top_k)
+    # Query the index (only vectorizes the query, no document reprocessing)
+    try:
+        results = manager.search(query, top_k=top_k)
+    except Exception as e:
+        return f"Error searching knowledge base: {str(e)}"
 
     if not results:
         return f"No results found for query: '{query}'"
